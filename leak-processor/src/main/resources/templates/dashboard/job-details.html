@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" 
+      th:replace="~{layout :: main-layout(~{::#job-details-content}, 'Chi tiết phiên chạy Job')}">
+<body>
+    <div id="job-details-content">
+        <!-- Page Header -->
+        <div class="content-header">
+            <div>
+                <h1 class="page-title" th:text="'Chi tiết Phiên chạy Job #' + ${job.id}">Chi tiết Job</h1>
+                <p class="page-subtitle" th:text="'Quản lý nhật ký xử lý của tiến trình: ' + ${job.jobName}"></p>
+            </div>
+            <a th:href="@{/dashboard/jobs}" class="btn btn-outline btn-sm">← Quay lại danh sách</a>
+        </div>
+
+        <!-- Job Summary Stats Cards -->
+        <div class="card-grid" style="margin-bottom: 2rem;">
+            <div class="metric-card">
+                <div class="metric-icon" style="background-color: rgba(255, 255, 255, 0.03);">⏱️</div>
+                <div class="metric-info">
+                    <span class="metric-label">Thời gian bắt đầu</span>
+                    <span class="metric-value" style="font-size: 1.1rem; font-weight: 500;" th:text="${job.startTime != null ? #temporals.format(job.startTime, 'dd/MM/yyyy HH:mm:ss') : 'N/A'}"></span>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon" style="background-color: rgba(255, 255, 255, 0.03);">⌛</div>
+                <div class="metric-info">
+                    <span class="metric-label">Thời gian kết thúc</span>
+                    <span class="metric-value" style="font-size: 1.1rem; font-weight: 500;" th:text="${job.endTime != null ? #temporals.format(job.endTime, 'dd/MM/yyyy HH:mm:ss') : 'Đang chạy...'}"></span>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon" th:style="${job.status == 'SUCCESS' ? 'background-color: var(--color-success-bg); color: var(--color-success);' : 'background-color: var(--color-danger-bg); color: var(--color-danger);'}">🏷️</div>
+                <div class="metric-info">
+                    <span class="metric-label">Trạng thái Job</span>
+                    <span class="metric-value" style="font-size: 1.1rem; font-weight: 600;" th:text="${job.status}">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Error Alert Box if Job failed -->
+        <div th:if="${job.errorMessage}" class="badge badge-danger" style="width: 100%; padding: 1rem; margin-bottom: 2rem; justify-content: flex-start; text-transform: none; border-radius: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem;">
+            <span style="font-weight: 600; font-size: 0.95rem;">🚨 Lỗi tiến trình ngắt quãng:</span>
+            <span style="font-family: monospace; font-size: 0.85rem; opacity: 0.9;" th:text="${job.errorMessage}">Error message here</span>
+        </div>
+
+        <!-- Tab Content Layout -->
+        <div style="margin-bottom: 2.5rem;">
+            <h2 class="chart-title" style="margin-bottom: 1rem;">📋 Nhật ký xử lý chi tiết (Step logs)</h2>
+            <div class="table-card">
+                <div class="table-wrapper">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>Thời gian</th>
+                                <th>Bước (Step)</th>
+                                <th>Trạng thái</th>
+                                <th>Thông điệp ghi chép</th>
+                                <th style="text-align: right; padding-right: 2rem;">Vết lỗi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="log : ${logs}">
+                                <td th:text="${log.createdAt != null ? #temporals.format(log.createdAt, 'dd/MM/yyyy HH:mm:ss') : 'N/A'}" style="font-size: 0.85rem; opacity: 0.8;">-</td>
+                                <td>
+                                    <span class="badge badge-info" th:text="${log.step}" style="font-family: monospace;">START</span>
+                                </td>
+                                <td>
+                                    <span class="badge" 
+                                          th:classappend="${log.status == 'SUCCESS' ? 'badge-success' : 'badge-danger'}"
+                                          th:text="${log.status}">-</span>
+                                </td>
+                                <td th:text="${log.message}">-</td>
+                                <td style="text-align: right; padding-right: 1.5rem;">
+                                    <button th:if="${log.stackTrace != null && !#strings.isEmpty(log.stackTrace)}"
+                                            class="btn btn-danger btn-sm" 
+                                            style="padding: 0.2rem 0.5rem; font-size: 0.75rem;"
+                                            th:onclick="showErrorModal([[${log.stackTrace}]])">
+                                        ⚠️ Xem Stack Trace
+                                    </button>
+                                    <span th:if="${log.stackTrace == null || #strings.isEmpty(log.stackTrace)}" style="opacity: 0.4; font-size: 0.8rem;">-</span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(logs)}">
+                                <td colspan="5" style="text-align: center; opacity: 0.6; padding: 2rem;">Chưa có lịch sử bước ghi nhận nào cho Job này.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaks Processed in Job -->
+        <div>
+            <h2 class="chart-title" style="margin-bottom: 1rem;">🔍 Các tài khoản rò rỉ được xử lý</h2>
+            <div class="table-card">
+                <div class="table-wrapper">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>Mã sự cố</th>
+                                <th>Tài khoản</th>
+                                <th>Email</th>
+                                <th>Số điện thoại</th>
+                                <th>Độ nghiêm trọng</th>
+                                <th>Trạng thái CTIP</th>
+                                <th>Trạng thái nội bộ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="leak : ${leaks}">
+                                <td th:text="${leak.credentialId}" style="font-family: monospace; font-size: 0.8rem; opacity: 0.85;">-</td>
+                                <td th:text="${leak.username}">-</td>
+                                <td th:text="${leak.email != null ? leak.email : 'N/A'}">-</td>
+                                <td th:text="${leak.phone != null ? leak.phone : 'N/A'}">-</td>
+                                <td>
+                                    <span class="badge" 
+                                          th:classappend="${'badge-' + leak.severity.toLowerCase()}"
+                                          th:text="${leak.severity}">LOW</span>
+                                </td>
+                                <td>
+                                    <span class="badge" 
+                                          th:classappend="${leak.ctipStatus == 'close' ? 'badge-success' : 'badge-warning'}"
+                                          th:text="${leak.ctipStatus != null ? leak.ctipStatus : 'open'}">open</span>
+                                </td>
+                                <td>
+                                    <span class="badge" 
+                                          th:classappend="${leak.localStatus == 'PENDING' ? 'badge-warning' : (leak.localStatus == 'PROCESSED' ? 'badge-success' : (leak.localStatus == 'EMAIL_SENT' ? 'badge-info' : 'badge-danger'))}"
+                                          th:text="${leak.localStatus}">-</span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(leaks)}">
+                                <td colspan="7" style="text-align: center; opacity: 0.6; padding: 2rem;">Không phát hiện bản ghi rò rỉ mới nào trong phiên chạy này.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stack Trace Error Modal Dialog -->
+        <div id="errorModal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeErrorModal()">&times;</span>
+                <h3 style="margin-bottom: 1rem; color: var(--color-danger); display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🚨</span> Chi tiết lỗi kỹ thuật (Java Exception Stack Trace)
+                </h3>
+                <pre id="stackTraceContainer" style="background-color: #0b0f15; border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.8rem; overflow-x: auto; max-height: 400px; white-space: pre-wrap; color: #ef4444; line-height: 1.4; text-align: left;"></pre>
+            </div>
+        </div>
+
+        <!-- Modal Javascript Logic -->
+        <script th:inline="javascript">
+            function showErrorModal(stackTrace) {
+                document.getElementById('stackTraceContainer').textContent = stackTrace;
+                document.getElementById('errorModal').style.display = 'block';
+            }
+            function closeErrorModal() {
+                document.getElementById('errorModal').style.display = 'none';
+            }
+            window.onclick = function(event) {
+                const modal = document.getElementById('errorModal');
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            }
+        </script>
+    </div>
+</body>
+</html>

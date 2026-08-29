@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" 
+      th:replace="~{layout :: main-layout(~{::#jobs-content}, 'Lịch sử Job chạy')}">
+<body>
+    <div id="jobs-content">
+        <!-- Page Header -->
+        <div class="content-header">
+            <div>
+                <h1 class="page-title">Lịch sử Chạy Job</h1>
+                <p class="page-subtitle">Nhật ký chi tiết các phiên quét tự động và quét thủ công trong hệ thống</p>
+            </div>
+        </div>
+
+        <!-- Success/Error Alerts -->
+        <div th:if="${errorMessage}" class="badge badge-danger" style="width: 100%; padding: 0.75rem 1rem; margin-bottom: 1.5rem; justify-content: flex-start; text-transform: none; border-radius: 10px;">
+            <span style="font-size: 1.1rem; margin-right: 0.5rem;">🚨</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi!</span>
+        </div>
+
+        <!-- Jobs Table Card -->
+        <div class="table-card">
+            <div class="table-wrapper">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên Job (Job Name)</th>
+                            <th>Bắt đầu</th>
+                            <th>Kết thúc</th>
+                            <th>Trạng thái</th>
+                            <th>Quét được</th>
+                            <th>Map được</th>
+                            <th>Đã gửi Mail</th>
+                            <th>Đã đóng CTIP</th>
+                            <th style="text-align: right; padding-right: 2rem;">Chi tiết</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="job : ${jobs}">
+                            <td th:text="${job.id}">1</td>
+                            <td th:text="${job.jobName}" style="font-weight: 500; font-family: monospace;">-</td>
+                            <td th:text="${job.startTime != null ? #temporals.format(job.startTime, 'dd/MM/yyyy HH:mm:ss') : 'N/A'}">-</td>
+                            <td th:text="${job.endTime != null ? #temporals.format(job.endTime, 'dd/MM/yyyy HH:mm:ss') : 'Đang chạy...'}">-</td>
+                            <td>
+                                <span class="badge" 
+                                      th:classappend="${job.status == 'SUCCESS' ? 'badge-success' : (job.status == 'FAILED' ? 'badge-danger' : 'badge-warning')}"
+                                      th:text="${job.status}">RUNNING</span>
+                            </td>
+                            <td th:text="${job.totalFetched}">0</td>
+                            <td th:text="${job.totalMapped}">0</td>
+                            <td th:text="${job.totalSentEmail}">0</td>
+                            <td th:text="${job.totalUpdatedCtip}">0</td>
+                            <td style="text-align: right; padding-right: 1.5rem;">
+                                <a th:href="@{/dashboard/jobs/{id}(id=${job.id})}" class="btn btn-outline btn-sm" style="padding: 0.25rem 0.5rem; border-radius: 6px;">🔍 Xem chi tiết</a>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(jobs)}">
+                            <td colspan="10" style="text-align: center; opacity: 0.6; padding: 2rem;">Chưa có lịch sử chạy Job nào được lưu trong hệ thống.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

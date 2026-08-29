@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" 
+      th:replace="~{layout :: main-layout(~{::#template-form-content}, 'Biên tập Mẫu Email')}">
+<body>
+    <div id="template-form-content">
+        <!-- Page Header -->
+        <div class="content-header">
+            <div>
+                <h1 class="page-title">Biên tập Mẫu Email</h1>
+                <p class="page-subtitle">Thay đổi nội dung tiêu đề và giao diện HTML cảnh báo lộ lọt mật khẩu</p>
+            </div>
+            <a th:href="@{/templates}" class="btn btn-outline btn-sm">← Hủy bỏ</a>
+        </div>
+
+        <!-- Form Panel -->
+        <div class="table-card" style="max-width: 800px; margin: 0 auto;">
+            <form th:action="@{/templates/save}" th:object="${template}" method="post">
+                <!-- Hidden ID -->
+                <input type="hidden" th:field="*{id}" />
+
+                <!-- Template Code -->
+                <div class="form-group">
+                    <label for="templateName" class="form-label">Mã định danh mẫu thư (Template Name)*</label>
+                    <input type="text" 
+                           id="templateName" 
+                           th:field="*{templateName}" 
+                           class="form-control" 
+                           required 
+                           readonly 
+                           style="background-color: rgba(255, 255, 255, 0.02); color: var(--text-secondary); font-family: monospace;" />
+                </div>
+
+                <!-- Subject -->
+                <div class="form-group">
+                    <label for="subject" class="form-label">Tiêu đề cảnh báo Email (Subject)*</label>
+                    <input type="text" 
+                           id="subject" 
+                           th:field="*{subject}" 
+                           class="form-control" 
+                           placeholder="Ví dụ: [VNPT SmartCA] Cảnh báo rò rỉ thông tin mật khẩu tài khoản" 
+                           required />
+                </div>
+
+                <!-- Body HTML -->
+                <div class="form-group">
+                    <label for="bodyHtml" class="form-label">Nội dung HTML mẫu thư (Body HTML)*</label>
+                    <textarea id="bodyHtml" 
+                              th:field="*{bodyHtml}" 
+                              class="form-control" 
+                              placeholder="Nhập nội dung mã HTML chứa CSS inline tại đây..." 
+                              required 
+                              style="font-family: monospace; font-size: 0.85rem; height: 350px;"></textarea>
+                    <small style="color: var(--text-muted); font-size: 0.8rem;">Giao diện HTML nên sử dụng thẻ table và CSS inline để tương thích tốt nhất trên các hộp thư Outlook, Gmail.</small>
+                </div>
+
+                <!-- Form Controls -->
+                <div class="form-actions">
+                    <a th:href="@{/templates}" class="btn btn-outline">Hủy bỏ</a>
+                    <button type="submit" class="btn btn-primary">💾 Lưu mẫu thư</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

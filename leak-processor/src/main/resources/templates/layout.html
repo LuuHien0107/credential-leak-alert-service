@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:fragment="main-layout(content, title)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} + ' - VNPT CA Warning System'"></title>
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+    <!-- Chart.js CDN for statistics visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Persistent Side Navigation Bar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-logo">V</div>
+                <span class="brand-name">VNPT SmartCA</span>
+            </div>
+            
+            <ul class="nav-menu">
+                <li>
+                    <a th:href="@{/dashboard}" class="nav-link" th:classappend="${activeTab == 'dashboard' ? 'active' : ''}">
+                        <span class="nav-icon">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a th:href="@{/dashboard/jobs}" class="nav-link" th:classappend="${activeTab == 'jobs' ? 'active' : ''}">
+                        <span class="nav-icon">⚙️</span>
+                        <span>Lịch sử Job</span>
+                    </a>
+                </li>
+                <li>
+                    <a th:href="@{/templates}" class="nav-link" th:classappend="${activeTab == 'templates' ? 'active' : ''}">
+                        <span class="nav-icon">✉️</span>
+                        <span>Mẫu Email</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <p>VNPT IT CA Warning</p>
+                <p style="font-size: 0.7rem; margin-top: 0.25rem; opacity: 0.7;">System Version 1.0.0</p>
+            </div>
+        </aside>
+
+        <!-- Main Window Container -->
+        <main class="main-content">
+            <!-- Dynamic Content Injected Here -->
+            <div th:replace="${content}"></div>
+        </main>
+    </div>
+</body>
+</html>

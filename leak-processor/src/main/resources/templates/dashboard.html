@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+    th:replace="~{layout :: main-layout(~{::#dashboard-content}, 'Tổng quan Dashboard')}">
+
+<body>
+    <div id="dashboard-content">
+        <!-- Notification Banner for Async Job Operations -->
+        <div id="jobStatusBanner" class="badge"
+            style="display: none; width: 100%; padding: 1rem 1.5rem; margin-bottom: 1.5rem; justify-content: space-between; border-radius: 12px; font-size: 0.95rem; text-transform: none; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span id="jobBannerIcon" style="font-size: 1.2rem;">🔄</span>
+                <span id="jobBannerText">Đang xử lý tiến trình ngầm...</span>
+            </div>
+            <button onclick="document.getElementById('jobStatusBanner').style.display='none'"
+                class="btn btn-outline btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">✕ Đóng</button>
+        </div>
+
+        <!-- Dashboard Header -->
+        <div class="content-header">
+            <div>
+                <h1 class="page-title">Hệ thống Giám sát Rò rỉ Tài khoản</h1>
+                <p class="page-subtitle">Thống kê dữ liệu thời gian thực và quản trị sự cố lộ lọt</p>
+            </div>
+            <!-- Quick Trigger Actions for Job 1 & Job 2 -->
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <button id="btnTriggerJob1" class="btn btn-primary btn-sm">⚡ Chạy Job 1: Quét CTIP & Xác thực
+                    SmartCA</button>
+                <button id="btnTriggerJob2" class="btn btn-outline btn-sm">✉️ Chạy Job 2: Gửi Email & Đóng CTIP</button>
+            </div>
+        </div>
+
+        <!-- Metric Indicator Cards Grid -->
+        <div class="card-grid">
+            <div class="metric-card">
+                <div class="metric-icon" style="background-color: rgba(255, 255, 255, 0.05); color: #fff;">📁</div>
+                <div class="metric-info">
+                    <span class="metric-label">Tổng số sự cố</span>
+                    <span class="metric-value" id="metricTotalLeaks" th:text="${totalLeaks}">0</span>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon"
+                    style="background-color: var(--color-warning-bg); color: var(--color-warning);">⏳</div>
+                <div class="metric-info">
+                    <span class="metric-label">Đang chờ xử lý</span>
+                    <span class="metric-value" id="metricTotalPending" th:text="${totalPending}">0</span>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon" style="background-color: var(--color-info-bg); color: var(--color-info);">📧
+                </div>
+                <div class="metric-info">
+                    <span class="metric-label">Đã gửi email</span>
+                    <span class="metric-value" id="metricTotalEmailed" th:text="${totalEmailed}">0</span>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon"
+                    style="background-color: var(--color-success-bg); color: var(--color-success);">✅</div>
+                <div class="metric-info">
+                    <span class="metric-label">Đã đóng (CTIP)</span>
+                    <span class="metric-value" id="metricTotalProcessed" th:text="${totalProcessed}">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visual Analytics Panel -->
+        <div class="chart-grid">
+            <!-- Processing Status Flow Bar Chart -->
+            <div class="chart-card">
+                <h2 class="chart-title">Tiến trình Xử lý Sự cố</h2>
+                <div class="chart-wrapper">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Severity Classification Pie Chart -->
+            <div class="chart-card">
+                <h2 class="chart-title">Mức độ Nghiêm trọng</h2>
+                <div class="chart-wrapper">
+                    <canvas id="severityChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Latest Scanned Incident Table -->
+        <div class="table-card">
+            <div class="table-header">
+                <h2 class="chart-title">Sự cố Rò rỉ Mới nhận</h2>
+                <a th:href="@{/dashboard/leaks}" class="btn btn-outline btn-sm">Xem tất cả</a>
+            </div>
+            <div class="table-wrapper">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Mã sự cố</th>
+                            <th>Tài khoản</th>
+                            <th>Email</th>
+                            <th>Số điện thoại</th>
+                            <th>Độ nghiêm trọng</th>
+                            <th>Thời gian lộ lọt</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody id="latestLeaksTableBody">
+                        <tr th:each="leak : ${latestLeaks}">
+                            <td th:text="${leak.credentialId}"
+                                style="font-family: monospace; font-size: 0.8rem; opacity: 0.85;">-</td>
+                            <td th:text="${leak.username}">-</td>
+                            <td th:text="${leak.email != null ? leak.email : 'N/A'}">-</td>
+                            <td th:text="${leak.phone != null ? leak.phone : 'N/A'}">-</td>
+                            <td>
+                                <span class="badge" th:classappend="${'badge-' + leak.severity.toLowerCase()}"
+                                    th:text="${leak.severity}">LOW</span>
+                            </td>
+                            <td
+                                th:text="${leak.compromiseTime != null ? #temporals.format(leak.compromiseTime, 'dd/MM/yyyy HH:mm') : 'N/A'}">
+                                -</td>
+                            <td>
+                                <span class="badge"
+                                    th:classappend="${leak.localStatus == 'PENDING' ? 'badge-warning' : (leak.localStatus == 'PROCESSED' ? 'badge-success' : (leak.localStatus == 'EMAIL_SENT' ? 'badge-info' : 'badge-danger'))}"
+                                    th:text="${leak.localStatus}">-</span>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(latestLeaks)}">
+                            <td colspan="7" style="text-align: center; opacity: 0.6; padding: 2rem;">Chưa có bản ghi lộ
+                                lọt nào trong cơ sở dữ liệu.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Chart.js Rendering Logic & Non-blocking AJAX Polling -->
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            document.addEventListener("DOMContentLoaded", function () {
+                const pending = /*[[${totalPending}]]*/ 0;
+                const emailed = /*[[${totalEmailed}]]*/ 0;
+                const processed = /*[[${totalProcessed}]]*/ 0;
+                const failed = /*[[${totalFailed}]]*/ 0;
+
+                const countLow = /*[[${severityLow}]]*/ 0;
+                const countMedium = /*[[${severityMedium}]]*/ 0;
+                const countHigh = /*[[${severityHigh}]]*/ 0;
+                const countCritical = /*[[${severityCritical}]]*/ 0;
+
+                // 1. Status Bar Chart Configuration
+                const ctxStatus = document.getElementById('statusChart').getContext('2d');
+                window.statusChart = new Chart(ctxStatus, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Đang chờ (Pending)', 'Đã báo mail (Emailed)', 'Đã đóng CTIP (Processed)', 'Lỗi xử lý (Failed)'],
+                        datasets: [{
+                            label: 'Số lượng sự cố',
+                            data: [pending, emailed, processed, failed],
+                            backgroundColor: [
+                                '#f59e0b', // Warning
+                                '#06b6d4', // Info/Cyan
+                                '#10b981', // Success/Green
+                                '#ef4444'  // Danger/Red
+                            ],
+                            borderWidth: 0,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+
+                // 2. Severity Pie Chart Configuration
+                const ctxSeverity = document.getElementById('severityChart').getContext('2d');
+                window.severityChart = new Chart(ctxSeverity, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Low', 'Medium', 'High', 'Critical'],
+                        datasets: [{
+                            data: [countLow, countMedium, countHigh, countCritical],
+                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#b91c1c'],
+                            borderWidth: 2,
+                            borderColor: '#111827'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: '#94a3b8', font: { family: 'Outfit' } }
+                            }
+                        },
+                        cutout: '65%'
+                    }
+                });
+
+                // 3. Helper function for executing Job triggers with non-blocking UI Banner
+                function startJobExecution(triggerUrl, defaultTitle) {
+                    const banner = document.getElementById('jobStatusBanner');
+                    const bannerIcon = document.getElementById('jobBannerIcon');
+                    const bannerText = document.getElementById('jobBannerText');
+
+                    banner.style.display = 'flex';
+                    banner.className = 'badge badge-info';
+                    bannerIcon.textContent = '🔄';
+                    bannerText.textContent = defaultTitle + '...';
+
+                    fetch(triggerUrl, {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json' }
+                    })
+                        .then(response => {
+                            if (!response.ok) throw new Error('Không thể khởi động tiến trình.');
+                            return response.json();
+                        })
+                        .then(data => {
+                            const jobId = data.jobId;
+
+                            const pollInterval = setInterval(() => {
+                                fetch('/api/v1/jobs/status/' + jobId)
+                                    .then(res => {
+                                        if (!res.ok) throw new Error('Không thể kiểm tra trạng thái.');
+                                        return res.json();
+                                    })
+                                    .then(jobData => {
+                                        const status = jobData.status;
+                                        // Auto-update dashboard metrics during execution
+                                        updateDashboardStats();
+
+                                        if (status === 'RUNNING') {
+                                            bannerText.innerHTML = defaultTitle + ' (Job #' + jobId + '): Đã gửi mail <b>' + (jobData.totalSentEmail || 0) + '</b> \| Đã đóng CTIP <b>' + (jobData.totalUpdatedCtip || 0) + '</b>...';
+                                        } else if (status === 'SUCCESS') {
+                                            clearInterval(pollInterval);
+                                            banner.className = 'badge badge-success';
+                                            bannerIcon.textContent = '✅';
+                                            bannerText.innerHTML = '<b>' + (data.jobName || 'Tiến trình') + '</b> hoàn tất thành công! Đã gửi mail <b>' + (jobData.totalSentEmail || 0) + '</b> và đóng CTIP <b>' + (jobData.totalUpdatedCtip || 0) + '</b> bản ghi.';
+                                            updateDashboardStats();
+                                        } else if (status === 'FAILED') {
+                                            clearInterval(pollInterval);
+                                            banner.className = 'badge badge-danger';
+                                            bannerIcon.textContent = '❌';
+                                            bannerText.innerHTML = 'Tiến trình Job #' + jobId + ' thất bại! Lỗi: ' + (jobData.errorMessage || 'Lỗi xử lý');
+                                            updateDashboardStats();
+                                        }
+                                    })
+                                    .catch(err => {
+                                        clearInterval(pollInterval);
+                                        console.error('Polling error:', err);
+                                    });
+                            }, 1500);
+                        })
+                        .catch(err => {
+                            banner.className = 'badge badge-danger';
+                            bannerIcon.textContent = '❌';
+                            bannerText.textContent = 'Không thể kích hoạt tiến trình: ' + err.message;
+                        });
+                }
+
+                // 4. Event Listeners for Job 1 & Job 2
+                document.getElementById('btnTriggerJob1').addEventListener('click', function (e) {
+                    e.preventDefault();
+                    startJobExecution('/api/v1/jobs/trigger-job1', 'Job 1: Quét CTIP & Xác thực SmartCA');
+                });
+
+                document.getElementById('btnTriggerJob2').addEventListener('click', function (e) {
+                    e.preventDefault();
+                    startJobExecution('/api/v1/jobs/trigger-job2', 'Job 2: Gửi Email & Đóng CTIP');
+                });
+
+                // 5. Auto-update stats and leaks list periodically
+                function updateDashboardStats() {
+                    fetch('/api/v1/jobs/stats')
+                        .then(res => {
+                            if (!res.ok) throw new Error('Stats fetch failed');
+                            return res.json();
+                        })
+                        .then(data => {
+                            document.getElementById('metricTotalLeaks').textContent = data.totalLeaks;
+                            document.getElementById('metricTotalPending').textContent = data.totalPending;
+                            document.getElementById('metricTotalEmailed').textContent = data.totalEmailed;
+                            document.getElementById('metricTotalProcessed').textContent = data.totalProcessed;
+
+                            if (window.statusChart) {
+                                window.statusChart.data.datasets[0].data = [
+                                    data.totalPending,
+                                    data.totalEmailed,
+                                    data.totalProcessed,
+                                    data.totalFailed
+                                ];
+                                window.statusChart.update();
+                            }
+
+                            if (window.severityChart) {
+                                window.severityChart.data.datasets[0].data = [
+                                    data.severityLow,
+                                    data.severityMedium,
+                                    data.severityHigh,
+                                    data.severityCritical
+                                ];
+                                window.severityChart.update();
+                            }
+
+                            const tbody = document.getElementById('latestLeaksTableBody');
+                            if (tbody && data.latestLeaks) {
+                                tbody.innerHTML = '';
+                                if (data.latestLeaks.length === 0) {
+                                    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; opacity: 0.6; padding: 2rem;">Chưa có bản ghi lộ lọt nào trong cơ sở dữ liệu.</td></tr>`;
+                                } else {
+                                    data.latestLeaks.forEach(leak => {
+                                        const tr = document.createElement('tr');
+
+                                        const tdId = document.createElement('td');
+                                        tdId.style.fontFamily = 'monospace';
+                                        tdId.style.fontSize = '0.8rem';
+                                        tdId.style.opacity = '0.85';
+                                        tdId.textContent = leak.credentialId || '-';
+                                        tr.appendChild(tdId);
+
+                                        const tdUser = document.createElement('td');
+                                        tdUser.textContent = leak.username || '-';
+                                        tr.appendChild(tdUser);
+
+                                        const tdEmail = document.createElement('td');
+                                        tdEmail.textContent = leak.email || 'N/A';
+                                        tr.appendChild(tdEmail);
+
+                                        const tdPhone = document.createElement('td');
+                                        tdPhone.textContent = leak.phone || 'N/A';
+                                        tr.appendChild(tdPhone);
+
+                                        const tdSev = document.createElement('td');
+                                        const badgeSev = document.createElement('span');
+                                        badgeSev.className = 'badge badge-' + (leak.severity ? leak.severity.toLowerCase() : 'low');
+                                        badgeSev.textContent = leak.severity || 'LOW';
+                                        tdSev.appendChild(badgeSev);
+                                        tr.appendChild(tdSev);
+
+                                        const tdTime = document.createElement('td');
+                                        tdTime.textContent = leak.compromiseTime || 'N/A';
+                                        tr.appendChild(tdTime);
+
+                                        const tdStatus = document.createElement('td');
+                                        const badgeStatus = document.createElement('span');
+                                        let statusClass = 'badge-danger';
+                                        if (leak.localStatus === 'PENDING') statusClass = 'badge-warning';
+                                        else if (leak.localStatus === 'PROCESSED') statusClass = 'badge-success';
+                                        else if (leak.localStatus === 'EMAIL_SENT') statusClass = 'badge-info';
+                                        badgeStatus.className = 'badge ' + statusClass;
+                                        badgeStatus.textContent = leak.localStatus || '-';
+                                        tdStatus.appendChild(badgeStatus);
+                                        tr.appendChild(tdStatus);
+
+                                        tbody.appendChild(tr);
+                                    });
+                                }
+                            }
+                        })
+                        .catch(err => { console.error('Error auto-updating stats:', err); });
+                }
+
+                setInterval(updateDashboardStats, 3000);
+            });
+            /*]]>*/
+        </script>
+    </div>
+</body>
+
+</html>

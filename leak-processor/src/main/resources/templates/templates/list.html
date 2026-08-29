@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" 
+      th:replace="~{layout :: main-layout(~{::#templates-content}, 'Quản lý Mẫu Email')}">
+<body>
+    <div id="templates-content">
+        <!-- Page Header -->
+        <div class="content-header">
+            <div>
+                <h1 class="page-title">Quản lý Mẫu Email Cảnh báo</h1>
+                <p class="page-subtitle">Xem cấu trúc và biên tập nội dung HTML của các mẫu thư gửi đi</p>
+            </div>
+            <!-- Standard initialization only, no template deletion in requirements -->
+        </div>
+
+        <!-- Success Alert Message -->
+        <div th:if="${successMessage}" class="badge badge-success" style="width: 100%; padding: 0.75rem 1rem; margin-bottom: 1.5rem; justify-content: flex-start; text-transform: none; border-radius: 10px;">
+            <span style="font-size: 1.1rem; margin-right: 0.5rem;">✅</span>
+            <span th:text="${successMessage}">Thao tác thành công!</span>
+        </div>
+
+        <!-- Templates Grid Table -->
+        <div class="table-card">
+            <div class="table-wrapper">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Mã mẫu thư (Template Name)</th>
+                            <th>Tiêu đề Email (Subject)</th>
+                            <th>Ngày cập nhật</th>
+                            <th style="text-align: right; padding-right: 2rem;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="template : ${templates}">
+                            <td th:text="${template.id}">1</td>
+                            <td th:text="${template.templateName}" style="font-weight: 500; font-family: monospace;">-</td>
+                            <td th:text="${template.subject}">-</td>
+                            <td th:text="${template.updatedAt != null ? #temporals.format(template.updatedAt, 'dd/MM/yyyy HH:mm') : 'N/A'}">-</td>
+                            <td style="text-align: right; padding-right: 1.5rem;">
+                                <a th:href="@{/templates/edit/{id}(id=${template.id})}" class="btn btn-outline btn-sm" style="padding: 0.25rem 0.5rem; border-radius: 6px;">✏️ Biên tập HTML</a>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(templates)}">
+                            <td colspan="5" style="text-align: center; opacity: 0.6; padding: 2rem;">Chưa có mẫu email nào được đăng ký trong hệ thống.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" 
+      th:replace="~{layout :: main-layout(~{::#leaks-content}, 'Danh sách sự cố lộ lọt')}">
+<body>
+    <div id="leaks-content">
+        <!-- Page Header -->
+        <div class="content-header">
+            <div>
+                <h1 class="page-title">Chi tiết Sự cố Lộ lọt</h1>
+                <p class="page-subtitle">Quản trị danh sách toàn bộ tài khoản bị rò rỉ phát hiện từ CTIP & SmartCA</p>
+            </div>
+            <a th:href="@{/dashboard}" class="btn btn-outline btn-sm">← Quay lại Dashboard</a>
+        </div>
+
+        <!-- Leaks Table Grid -->
+        <div class="table-card">
+            <div class="table-wrapper">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Mã sự cố</th>
+                            <th>Tài khoản</th>
+                            <th>Email</th>
+                            <th>Số điện thoại</th>
+                            <th>Độ nghiêm trọng</th>
+                            <th>Thời gian phát hiện</th>
+                            <th>Mật khẩu mã hóa</th>
+                            <th>Nguồn rò rỉ</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="leak : ${leaks}">
+                            <td th:text="${leak.credentialId}" style="font-family: monospace; font-size: 0.8rem; opacity: 0.85;">-</td>
+                            <td th:text="${leak.username}">-</td>
+                            <td th:text="${leak.email != null ? leak.email : 'N/A'}">-</td>
+                            <td th:text="${leak.phone != null ? leak.phone : 'N/A'}">-</td>
+                            <td>
+                                <span class="badge" 
+                                      th:classappend="${'badge-' + leak.severity.toLowerCase()}"
+                                      th:text="${leak.severity}">LOW</span>
+                            </td>
+                            <td th:text="${leak.compromiseTime != null ? #temporals.format(leak.compromiseTime, 'dd/MM/yyyy HH:mm') : 'N/A'}">-</td>
+                            <td th:text="${#strings.abbreviate(leak.passwordEncrypted, 16)}" style="font-family: monospace; opacity: 0.7;">-</td>
+                            <td>
+                                <a th:href="${leak.leakUrl}" th:text="${#strings.abbreviate(leak.leakUrl, 25)}" target="_blank" style="color: var(--primary); text-decoration: none;">-</a>
+                            </td>
+                            <td>
+                                <span class="badge" 
+                                      th:classappend="${leak.localStatus == 'PENDING' ? 'badge-warning' : (leak.localStatus == 'PROCESSED' ? 'badge-success' : (leak.localStatus == 'EMAIL_SENT' ? 'badge-info' : 'badge-danger'))}"
+                                      th:text="${leak.localStatus}">-</span>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(leaks)}">
+                            <td colspan="9" style="text-align: center; opacity: 0.6; padding: 2rem;">Chưa có bản ghi lộ lọt nào trong cơ sở dữ liệu.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

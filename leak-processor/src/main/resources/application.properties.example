@@ -1,0 +1,61 @@
+# ===================================================================
+# Application Configuration Template (Copy sang application.properties hoặc application-local.properties)
+# ===================================================================
+spring.application.name=leak-processor
+server.port=8080
+
+# Database Configuration (MySQL)
+spring.datasource.url=jdbc:mysql://localhost:3306/leak_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+spring.datasource.username=root
+spring.datasource.password=your_mysql_password_here
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# JPA and Hibernate configurations
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.format_sql=false
+
+# Spring Mail configurations (Gmail SMTP setup)
+# LƯU Ý: Dùng App Password của Google (Mật khẩu ứng dụng 16 ký tự), không dùng mật khẩu chính
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=your_email@gmail.com
+spring.mail.password=your_16_char_gmail_app_password
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
+# VNPT CTIP API configurations
+# Đặt URL là http://localhost:8080 để chạy chế độ giả lập (Mock), hoặc endpoint thật của VNPT CTIP
+ctip.api.url=http://localhost:8080
+ctip.api.key=your_ctip_api_key_here
+ctip.api.enrichment-url=http://localhost:8080/api/v1/account-leak/credentials/enrichment
+ctip.api.statuses-url=http://localhost:8080/api/v1/account-leak/statuses
+ctip.api.connect-timeout-ms=5000
+ctip.api.read-timeout-ms=10000
+ctip.api.domain-search=vnpt.vn
+ctip.api.page-size=100
+
+# Job 1 Search Window Configurations (0 = All, 1 = Past 24h, 7 = Past Week)
+job1.scan.days-back=0
+
+# VNPT SmartCA API configurations
+# Đặt URL là http://localhost:8080 để chạy chế độ giả lập (Mock), hoặc endpoint thật của VNPT SmartCA
+smartca.api.url=http://localhost:8080
+smartca.api.token-url=http://localhost:8080/auth/token
+smartca.api.userinfo-url=http://localhost:8080/identityapi/userinfo/info
+smartca.api.client-id=your_smartca_client_id
+smartca.api.client-secret=your_smartca_client_secret
+smartca.api.connect-timeout-ms=5000
+smartca.api.read-timeout-ms=10000
+
+# Scheduler Cron Configurations
+# Job 1: Quét CTIP, Auth SmartCA & Lấy Info (Chạy lúc 00:00 hàng ngày)
+job1.scan.cron=0 0 0 * * *
+# Job 2: Gửi email cảnh báo & Đóng CTIP (Chạy lúc 00:00 mỗi 3 ngày)
+job2.email.cron=0 0 0 */3 * *
+
+# Telegram Bot Configurations (Group VNPT SmartCA Alerts)
+telegram.bot.enabled=true
+telegram.bot.token=your_telegram_bot_token_here
+telegram.bot.chat-id=your_telegram_group_chat_id_here
+telegram.bot.connect-timeout-ms=5000
